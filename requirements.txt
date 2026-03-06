@@ -5,6 +5,9 @@ transformers
 torch
 pydantic
 sqlalchemy
-psycopg2-binary
 python-dotenv
-firebase-admin
+apscheduler
+websocket-client
+yfinance
+pandas
+ta
