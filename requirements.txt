@@ -5,9 +5,11 @@ sqlalchemy
 python-dotenv
 apscheduler
 pydantic
-transformers
-torch
-yfinance
 pandas
+yfinance
 ta
 websocket-client
+
+# AI models
+transformers
+torch --index-url https://download.pytorch.org/whl/cpu
