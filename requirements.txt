@@ -1,13 +1,13 @@
 fastapi
 uvicorn
 requests
-transformers
-torch
-pydantic
 sqlalchemy
 python-dotenv
 apscheduler
-websocket-client
+pydantic
+transformers
+torch
 yfinance
 pandas
 ta
+websocket-client
