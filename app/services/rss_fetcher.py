@@ -1,7 +1,7 @@
 import feedparser
 
+
 RSS_SOURCES = [
-    "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best",
     "https://feeds.bloomberg.com/markets/news.rss",
     "https://finance.yahoo.com/news/rssindex"
 ]
@@ -17,10 +17,15 @@ def fetch_rss_news():
 
         for entry in feed.entries:
 
+            title = entry.get("title", "")
+
+            # Some feeds don't provide summary
+            content = entry.get("summary", title)
+
             article = {
-                "title": entry.title,
-                "content": entry.summary,
-                "source": {"name": entry.get("source", "RSS")},
+                "title": title,
+                "content": content,
+                "source": {"name": url},
             }
 
             articles.append(article)
