@@ -2,8 +2,8 @@
 
 pip install --upgrade pip
 
-# install CPU-only PyTorch
+# Install CPU PyTorch
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-# install other dependencies
+# Install remaining dependencies
 pip install -r requirements.txt
