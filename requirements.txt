@@ -11,4 +11,4 @@ ta
 websocket-client
 transformers
 feedparser
-torch==2.2.2+cpu --index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2
