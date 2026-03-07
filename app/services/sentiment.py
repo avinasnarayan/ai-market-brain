@@ -1,27 +1,17 @@
-from transformers import pipeline
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-sentiment_model = None
-
-
-def get_model():
-    global sentiment_model
-
-    if sentiment_model is None:
-        sentiment_model = pipeline(
-            "sentiment-analysis",
-            model="ProsusAI/finbert"
-        )
-
-    return sentiment_model
+analyzer = SentimentIntensityAnalyzer()
 
 
 def analyze_sentiment(text):
 
-    model = get_model()
+    score = analyzer.polarity_scores(text)["compound"]
 
-    result = model(text[:512])[0]
+    if score >= 0.05:
+        sentiment = "positive"
+    elif score <= -0.05:
+        sentiment = "negative"
+    else:
+        sentiment = "neutral"
 
-    label = result["label"]
-    score = result["score"]
-
-    return label.lower(), score
+    return sentiment, score

@@ -9,6 +9,5 @@ pandas
 yfinance
 ta
 websocket-client
-transformers
 feedparser
-torch==2.2.2
+vaderSentiment
