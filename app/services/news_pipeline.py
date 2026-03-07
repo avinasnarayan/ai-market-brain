@@ -1,5 +1,6 @@
 import hashlib
 
+from app.services.market_predictor import predict_market_direction
 from app.services.news_fetcher import fetch_global_news
 from app.services.sentiment import analyze_sentiment
 from app.services.impact import calculate_impact, is_high_impact
@@ -80,6 +81,15 @@ def run_news_pipeline():
 
         # AI Market Brain
         brain = market_brain(news_bias)
+direction, confidence = predict_market_direction(
+    sector,
+    sentiment,
+    brain["nifty"]["rsi"],
+    brain["nifty"]["momentum"]
+)
+
+print("Market Prediction:", direction)
+print("Confidence:", confidence)
 
         # Send alert if high impact
         if is_high_impact(impact):
