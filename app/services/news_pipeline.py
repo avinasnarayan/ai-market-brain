@@ -1,14 +1,11 @@
 import hashlib
 
-from app.services.market_predictor import predict_market_direction
 from app.services.news_fetcher import fetch_global_news
 from app.services.sentiment import analyze_sentiment
-from app.services.impact import calculate_impact, is_high_impact
 from app.services.sector_detector import detect_sector
 from app.services.stock_detector import detect_stocks
-from app.services.confidence_engine import calculate_confidence, confidence_label
 from app.services.market_brain import market_brain
-from app.services.notifier import send_notification
+from app.services.market_predictor import predict_market_direction
 
 from app.database import SessionLocal
 from app.models.news import News
@@ -24,7 +21,7 @@ IMPORTANT_KEYWORDS = [
 ]
 
 
-def is_relevant(text: str):
+def is_relevant(text):
 
     text = text.lower()
 
@@ -43,7 +40,7 @@ def run_news_pipeline():
 
     for article in articles:
 
-        content = article.get("content")
+        content = article.get("content") or article.get("title")
 
         if not content:
             continue
@@ -60,58 +57,35 @@ def run_news_pipeline():
         if exists:
             continue
 
-        # Sentiment
+        # sentiment analysis
         sentiment, score = analyze_sentiment(content)
 
-        # Impact score
-        impact = calculate_impact(score)
-
-        # Sector detection
+        # sector detection
         sector = detect_sector(content)
 
-        # Stock detection
+        # stock detection
         stocks = detect_stocks(content)
 
-        # Confidence engine
-        confidence = calculate_confidence(score, impact, stocks)
-        confidence_level = confidence_label(confidence)
+        # market indicators
+        brain = market_brain(sentiment)
 
-        # News bias
-        news_bias = "Bullish" if impact > 0 else "Bearish"
+        # AI market prediction
+        direction, confidence = predict_market_direction(
+            sector,
+            sentiment,
+            brain["nifty"]["rsi"],
+            brain["nifty"]["momentum"]
+        )
 
-        # AI Market Brain
-        brain = market_brain(news_bias)
-direction, confidence = predict_market_direction(
-    sector,
-    sentiment,
-    brain["nifty"]["rsi"],
-    brain["nifty"]["momentum"]
-)
+        print("📊 Market Prediction:", direction)
+        print("Confidence:", confidence)
 
-print("Market Prediction:", direction)
-print("Confidence:", confidence)
-
-        # Send alert if high impact
-        if is_high_impact(impact):
-
-            send_notification(
-                title,
-                sentiment,
-                impact,
-                article["source"]["name"],
-                sector,
-                stocks,
-                confidence,
-                confidence_level,
-                brain
-            )
-
+        # save to database
         news = News(
             title=title,
             content=content,
             source=article["source"]["name"],
             sentiment=sentiment,
-            impact_score=impact,
             sector=sector,
             hash=news_hash
         )
