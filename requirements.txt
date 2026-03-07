@@ -10,3 +10,4 @@ yfinance
 ta
 websocket-client
 transformers
+feedparser
