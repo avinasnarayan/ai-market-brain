@@ -1,17 +1,15 @@
 from fastapi import FastAPI
 from app.routes.news import router as news_router
 from app.workers.scheduler import start_scheduler
-import threading
 
 app = FastAPI()
 
-
-@app.on_event("startup")
-def startup_event():
-
-    thread = threading.Thread(target=start_scheduler)
-    thread.daemon = True
-    thread.start()
-
-
+# include routes
 app.include_router(news_router)
+
+@app.get("/")
+def root():
+    return {"message": "AI Market Brain API running"}
+
+# start background scheduler
+start_scheduler()
