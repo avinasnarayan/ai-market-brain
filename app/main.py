@@ -11,5 +11,7 @@ app.include_router(news_router)
 def root():
     return {"message": "AI Market Brain API running"}
 
-# start background scheduler
-start_scheduler()
+# start scheduler when server starts
+@app.on_event("startup")
+def start_background_tasks():
+    start_scheduler()
