@@ -1,1 +1,1 @@
-web: cd market_news_ai && python run.py
+web: uvicorn market_news_ai.app.main:app --host 0.0.0.0 --port $PORT
