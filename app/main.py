@@ -12,6 +12,15 @@ def root():
     return {"message": "AI Market Brain API running"}
 
 # start scheduler when server starts
+import threading
+
 @app.on_event("startup")
-def start_background_tasks():
-    start_scheduler()
+def startup_event():
+    print("Starting background news scheduler...")
+
+    def run_scheduler():
+        start_news_scheduler()
+
+    thread = threading.Thread(target=run_scheduler)
+    thread.daemon = True
+    thread.start()
