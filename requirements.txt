@@ -11,3 +11,5 @@ ta
 websocket-client
 feedparser
 vaderSentiment
+scikit-learn
+joblib
