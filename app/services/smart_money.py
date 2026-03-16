@@ -7,19 +7,22 @@ def fetch_option_chain():
 
     headers = {
         "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
         "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br"
+        "Connection": "keep-alive"
     }
 
     session = requests.Session()
 
+    # First visit homepage to obtain cookies
     session.get("https://www.nseindia.com", headers=headers)
 
     response = session.get(url, headers=headers)
 
-    data = response.json()
+    if response.status_code != 200:
+        return None
 
-    return data
+    return response.json()
 
 
 def analyze_option_chain():
@@ -27,6 +30,9 @@ def analyze_option_chain():
     try:
 
         data = fetch_option_chain()
+
+        if not data or "records" not in data:
+            return {"error": "Option chain data unavailable"}
 
         strikes = data["records"]["data"]
 
@@ -39,15 +45,16 @@ def analyze_option_chain():
         resistance = None
         support = None
 
-        pain = []
-
         for item in strikes:
 
-            strike = item["strikePrice"]
+            strike = item.get("strikePrice")
 
-            if "CE" in item:
+            ce = item.get("CE")
+            pe = item.get("PE")
 
-                ce_oi = item["CE"]["openInterest"]
+            if ce:
+
+                ce_oi = ce.get("openInterest", 0)
 
                 total_ce_oi += ce_oi
 
@@ -55,9 +62,9 @@ def analyze_option_chain():
                     max_ce_oi = ce_oi
                     resistance = strike
 
-            if "PE" in item:
+            if pe:
 
-                pe_oi = item["PE"]["openInterest"]
+                pe_oi = pe.get("openInterest", 0)
 
                 total_pe_oi += pe_oi
 
@@ -65,7 +72,10 @@ def analyze_option_chain():
                     max_pe_oi = pe_oi
                     support = strike
 
-        pcr = total_pe_oi / total_ce_oi if total_ce_oi else 0
+        if total_ce_oi == 0:
+            return {"error": "Invalid option chain data"}
+
+        pcr = total_pe_oi / total_ce_oi
 
         if pcr > 1:
             bias = "Bullish"
@@ -74,19 +84,19 @@ def analyze_option_chain():
         else:
             bias = "Neutral"
 
-        max_pain = (support + resistance) / 2 if support and resistance else None
+        max_pain = None
+
+        if support and resistance:
+            max_pain = (support + resistance) / 2
 
         return {
 
             "smart_money_bias": bias,
-
             "pcr": round(pcr, 2),
-
             "support": support,
-
             "resistance": resistance,
-
             "max_pain": max_pain
+
         }
 
     except Exception as e:
