@@ -1,51 +1,75 @@
 import yfinance as yf
+import pandas as pd
 
 
-def get_global_data():
+def get_change(symbol):
 
-    sp500 = yf.download("^GSPC", period="2d", interval="1d")
-    nasdaq = yf.download("^IXIC", period="2d", interval="1d")
-    dow = yf.download("^DJI", period="2d", interval="1d")
-    oil = yf.download("CL=F", period="2d", interval="1d")
-    vix = yf.download("^VIX", period="2d", interval="1d")
+    data = yf.download(symbol, period="2d", interval="1d")
 
-    sp_change = (sp500["Close"].iloc[-1] - sp500["Close"].iloc[-2]) / sp500["Close"].iloc[-2]
-    nas_change = (nasdaq["Close"].iloc[-1] - nasdaq["Close"].iloc[-2]) / nasdaq["Close"].iloc[-2]
-    dow_change = (dow["Close"].iloc[-1] - dow["Close"].iloc[-2]) / dow["Close"].iloc[-2]
-    oil_change = (oil["Close"].iloc[-1] - oil["Close"].iloc[-2]) / oil["Close"].iloc[-2]
+    if data.empty:
+        return 0
 
-    vix_value = float(vix["Close"].iloc[-1])
+    close = data["Close"].values.flatten()
 
-    return sp_change, nas_change, dow_change, oil_change, vix_value
+    if len(close) < 2:
+        return 0
+
+    change = (close[-1] - close[-2]) / close[-2]
+
+    return float(change)
+
+
+def get_vix():
+
+    data = yf.download("^VIX", period="1d", interval="1d")
+
+    if data.empty:
+        return 15
+
+    close = data["Close"].values.flatten()
+
+    return float(close[-1])
 
 
 def macro_prediction():
 
-    sp, nas, dow, oil, vix = get_global_data()
+    try:
 
-    score = 0
+        sp = get_change("^GSPC")
+        nas = get_change("^IXIC")
+        dow = get_change("^DJI")
+        oil = get_change("CL=F")
 
-    score += sp * 100
-    score += nas * 100
-    score += dow * 100
-    score -= vix
+        vix = get_vix()
 
-    if score > 2:
-        outlook = "Bullish"
-    elif score < -2:
-        outlook = "Bearish"
-    else:
-        outlook = "Neutral"
+        score = 0
 
-    gap_probability = min(max(abs(score) * 10, 10), 90)
+        score += sp * 100
+        score += nas * 100
+        score += dow * 100
+        score += oil * 50
+        score -= vix * 0.5
 
-    return {
+        if score > 2:
+            outlook = "Bullish"
+        elif score < -2:
+            outlook = "Bearish"
+        else:
+            outlook = "Neutral"
 
-        "nifty_outlook": outlook,
+        gap_probability = min(max(abs(score) * 10, 10), 90)
 
-        "banknifty_outlook": outlook,
+        confidence = min(abs(score) * 20, 85)
 
-        "gap_probability": round(gap_probability, 2),
+        return {
 
-        "confidence": round(min(abs(score) * 20, 85), 2)
-    }
+            "nifty_outlook": outlook,
+            "banknifty_outlook": outlook,
+            "gap_probability": round(gap_probability, 2),
+            "confidence": round(confidence, 2)
+
+        }
+
+    except Exception as e:
+
+        return {"error": str(e)}
