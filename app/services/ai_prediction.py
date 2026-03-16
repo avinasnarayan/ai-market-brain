@@ -1,8 +1,50 @@
+import os
 import joblib
 import yfinance as yf
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 
-model = joblib.load("model.pkl")
+MODEL_PATH = "model.pkl"
+
+
+def train_model():
+
+    data = yf.download("^NSEI", period="1y", interval="1d")
+
+    data["return"] = data["Close"].pct_change()
+    data["direction"] = (data["return"] > 0).astype(int)
+
+    data["ma5"] = data["Close"].rolling(5).mean()
+    data["ma10"] = data["Close"].rolling(10).mean()
+    data["volatility"] = data["return"].rolling(5).std()
+
+    data = data.dropna()
+
+    X = data[["ma5", "ma10", "volatility"]]
+    y = data["direction"]
+
+    model = RandomForestClassifier()
+
+    model.fit(X, y)
+
+    joblib.dump(model, MODEL_PATH)
+
+    return model
+
+
+def load_model():
+
+    if os.path.exists(MODEL_PATH):
+
+        return joblib.load(MODEL_PATH)
+
+    else:
+
+        return train_model()
+
+
+model = load_model()
+
 
 def predict_market():
 
@@ -16,7 +58,7 @@ def predict_market():
 
     data = data.dropna()
 
-    latest = data.iloc[-1][["ma5","ma10","volatility"]]
+    latest = data.iloc[-1][["ma5", "ma10", "volatility"]]
 
     prediction = model.predict([latest])[0]
 
@@ -29,5 +71,5 @@ def predict_market():
 
     return {
         "prediction": direction,
-        "confidence": round(confidence*100,2)
+        "confidence": round(confidence * 100, 2)
     }
