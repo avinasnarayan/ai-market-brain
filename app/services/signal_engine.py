@@ -15,29 +15,28 @@ def generate_signal():
 
         df = pd.DataFrame(data)
 
-        df["Close"] = df["Close"].squeeze()
+        # FIX → convert to 1D series
+        close = df["Close"].values.flatten()
 
-        df["ema9"] = EMAIndicator(close=df["Close"], window=9).ema_indicator()
-        df["ema20"] = EMAIndicator(close=df["Close"], window=20).ema_indicator()
-        df["rsi"] = RSIIndicator(close=df["Close"], window=14).rsi()
+        close_series = pd.Series(close)
 
-        df = df.dropna()
+        ema9 = EMAIndicator(close_series, window=9).ema_indicator()
+        ema20 = EMAIndicator(close_series, window=20).ema_indicator()
+        rsi = RSIIndicator(close_series, window=14).rsi()
 
-        latest = df.iloc[-1]
-
-        price = float(latest["Close"])
-        ema9 = float(latest["ema9"])
-        ema20 = float(latest["ema20"])
-        rsi = float(latest["rsi"])
+        price = float(close_series.iloc[-1])
+        ema9_val = float(ema9.iloc[-1])
+        ema20_val = float(ema20.iloc[-1])
+        rsi_val = float(rsi.iloc[-1])
 
         signal = "NO TRADE"
         confidence = 50
 
-        if ema9 > ema20 and rsi > 55:
+        if ema9_val > ema20_val and rsi_val > 55:
             signal = "BUY CE"
             confidence = 70
 
-        elif ema9 < ema20 and rsi < 45:
+        elif ema9_val < ema20_val and rsi_val < 45:
             signal = "BUY PE"
             confidence = 70
 
@@ -46,16 +45,20 @@ def generate_signal():
         stoploss = round(price * 0.995, 2)
 
         return {
+
             "symbol": "BANKNIFTY",
+
             "signal": signal,
+
             "entry": entry,
+
             "target": target,
+
             "stoploss": stoploss,
+
             "confidence": confidence
         }
 
     except Exception as e:
 
-        return {
-            "error": str(e)
-        }
+        return {"error": str(e)}
