@@ -5,12 +5,12 @@ def analyze_option_chain():
 
     try:
 
-        ticker = yf.Ticker("^NSEI")
+        ticker = yf.Ticker("NIFTYBEES.NS")
 
         expiries = ticker.options
 
-        if not expiries:
-            return {"error": "No option expiry found"}
+        if len(expiries) == 0:
+            return {"error": "Options data unavailable"}
 
         expiry = expiries[0]
 
@@ -22,7 +22,10 @@ def analyze_option_chain():
         total_call_oi = calls["openInterest"].sum()
         total_put_oi = puts["openInterest"].sum()
 
-        pcr = total_put_oi / total_call_oi if total_call_oi else 0
+        if total_call_oi == 0:
+            return {"error": "Invalid options data"}
+
+        pcr = total_put_oi / total_call_oi
 
         call_max = calls.loc[calls["openInterest"].idxmax()]
         put_max = puts.loc[puts["openInterest"].idxmax()]
