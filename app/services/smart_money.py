@@ -1,39 +1,70 @@
-import yfinance as yf
+import requests
 
 
 def analyze_option_chain():
 
     try:
 
-        ticker = yf.Ticker("NIFTYBEES.NS")
+        session = requests.Session()
 
-        expiries = ticker.options
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
 
-        if len(expiries) == 0:
-            return {"error": "Options data unavailable"}
+        # First request to get cookies
+        session.get("https://www.nseindia.com", headers=headers)
 
-        expiry = expiries[0]
+        url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
 
-        opt = ticker.option_chain(expiry)
+        response = session.get(url, headers=headers)
 
-        calls = opt.calls
-        puts = opt.puts
+        data = response.json()
 
-        total_call_oi = calls["openInterest"].sum()
-        total_put_oi = puts["openInterest"].sum()
+        if "records" not in data:
+            return {"error": "NSE response invalid"}
 
-        if total_call_oi == 0:
-            return {"error": "Invalid options data"}
+        strikes = data["records"]["data"]
 
-        pcr = total_put_oi / total_call_oi
+        total_ce = 0
+        total_pe = 0
 
-        call_max = calls.loc[calls["openInterest"].idxmax()]
-        put_max = puts.loc[puts["openInterest"].idxmax()]
+        max_ce = 0
+        max_pe = 0
 
-        resistance = int(call_max["strike"])
-        support = int(put_max["strike"])
+        resistance = None
+        support = None
 
-        max_pain = int((support + resistance) / 2)
+        for item in strikes:
+
+            strike = item["strikePrice"]
+
+            ce = item.get("CE")
+            pe = item.get("PE")
+
+            if ce:
+
+                ce_oi = ce["openInterest"]
+                total_ce += ce_oi
+
+                if ce_oi > max_ce:
+                    max_ce = ce_oi
+                    resistance = strike
+
+            if pe:
+
+                pe_oi = pe["openInterest"]
+                total_pe += pe_oi
+
+                if pe_oi > max_pe:
+                    max_pe = pe_oi
+                    support = strike
+
+        if total_ce == 0:
+            return {"error": "Invalid option chain"}
+
+        pcr = total_pe / total_ce
 
         if pcr > 1:
             bias = "Bullish"
@@ -42,10 +73,12 @@ def analyze_option_chain():
         else:
             bias = "Neutral"
 
+        max_pain = (support + resistance) / 2 if support and resistance else None
+
         return {
 
             "smart_money_bias": bias,
-            "pcr": round(float(pcr), 2),
+            "pcr": round(pcr, 2),
             "support": support,
             "resistance": resistance,
             "max_pain": max_pain
