@@ -5,6 +5,8 @@ from app.workers.scheduler import start_scheduler
 from app.routes.signal import router as signal_router
 from app.routes.macro import router as macro_router
 from app.routes.smart_money import router as smart_router
+from app.routes.update_option_chain import router as option_router
+from app.routes.institutional import router as institutional_router
 import threading
 
 app = FastAPI()
@@ -15,6 +17,8 @@ app.include_router(prediction_router)
 app.include_router(signal_router)
 app.include_router(macro_router)
 app.include_router(smart_router)
+app.include_router(option_router)
+app.include_router(institutional_router)
 
 @app.get("/")
 def root():
