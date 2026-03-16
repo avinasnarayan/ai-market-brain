@@ -6,49 +6,56 @@ from ta.trend import EMAIndicator
 
 def generate_signal():
 
-    data = yf.download("^NSEBANK", period="5d", interval="5m")
+    try:
 
-    df = data.copy()
+        data = yf.download("^NSEBANK", period="5d", interval="5m")
 
-    df["ema9"] = EMAIndicator(df["Close"], 9).ema_indicator()
-    df["ema20"] = EMAIndicator(df["Close"], 20).ema_indicator()
-    df["rsi"] = RSIIndicator(df["Close"], 14).rsi()
+        if data.empty:
+            return {"error": "Market data unavailable"}
 
-    latest = df.iloc[-1]
+        df = pd.DataFrame(data)
 
-    price = float(latest["Close"])
-    ema9 = float(latest["ema9"])
-    ema20 = float(latest["ema20"])
-    rsi = float(latest["rsi"])
+        df["Close"] = df["Close"].squeeze()
 
-    signal = "NO TRADE"
-    confidence = 50
+        df["ema9"] = EMAIndicator(close=df["Close"], window=9).ema_indicator()
+        df["ema20"] = EMAIndicator(close=df["Close"], window=20).ema_indicator()
+        df["rsi"] = RSIIndicator(close=df["Close"], window=14).rsi()
 
-    if ema9 > ema20 and rsi > 55:
+        df = df.dropna()
 
-        signal = "BUY CE"
-        confidence = 70
+        latest = df.iloc[-1]
 
-    elif ema9 < ema20 and rsi < 45:
+        price = float(latest["Close"])
+        ema9 = float(latest["ema9"])
+        ema20 = float(latest["ema20"])
+        rsi = float(latest["rsi"])
 
-        signal = "BUY PE"
-        confidence = 70
+        signal = "NO TRADE"
+        confidence = 50
 
-    entry = round(price, 2)
-    target = round(price * 1.01, 2)
-    stoploss = round(price * 0.995, 2)
+        if ema9 > ema20 and rsi > 55:
+            signal = "BUY CE"
+            confidence = 70
 
-    return {
+        elif ema9 < ema20 and rsi < 45:
+            signal = "BUY PE"
+            confidence = 70
 
-        "symbol": "BANKNIFTY",
+        entry = round(price, 2)
+        target = round(price * 1.01, 2)
+        stoploss = round(price * 0.995, 2)
 
-        "signal": signal,
+        return {
+            "symbol": "BANKNIFTY",
+            "signal": signal,
+            "entry": entry,
+            "target": target,
+            "stoploss": stoploss,
+            "confidence": confidence
+        }
 
-        "entry": entry,
+    except Exception as e:
 
-        "target": target,
-
-        "stoploss": stoploss,
-
-        "confidence": confidence
-    }
+        return {
+            "error": str(e)
+        }
